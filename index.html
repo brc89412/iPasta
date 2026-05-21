@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pasta">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="theme-color" content="#060408">
+<title>La Pasta</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #060408;
+  --s1: #0d0910;
+  --s2: #13101a;
+  --s3: #1c1828;
+  --s4: #241f34;
+  --accent: #c4a882;
+  --accent2: #e8c99a;
+  --purple: #8b6fc4;
+  --purple2: #b89fe8;
+  --rose: #c46070;
+  --rose2: #e8909f;
+  --sage: #6a9a7a;
+  --sage2: #90c89a;
+  --amber: #c49040;
+  --amber2: #e8b860;
+  --text: #f0eaf8;
+  --text2: #8a8099;
+  --text3: #5a5268;
+  --danger: #e05050;
+  --r: 20px;
+  --rS: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  overflow-x: hidden;
+}
+
+/* ── NOISE GRAIN ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: .55;
+}
+
+/* ── AMBIENT BLOBS ── */
+.blob {
+  position: fixed; border-radius: 50%; filter: blur(80px); opacity: .12; pointer-events: none; z-index: 0;
+  animation: drift 18s ease-in-out infinite alternate;
+}
+.blob1 { width: 300px; height: 300px; background: var(--purple); top: -80px; right: -60px; animation-delay: 0s; }
+.blob2 { width: 240px; height: 240px; background: var(--rose); bottom: 100px; left: -80px; animation-delay: -6s; }
+.blob3 { width: 200px; height: 200px; background: var(--amber); top: 40%; right: -60px; animation-delay: -12s; }
+@keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(20px,30px) scale(1.1); } }
+
+/* ── HEADER ── */
+.hdr {
+  position: sticky; top: 0; z-index: 100;
+  padding: env(safe-area-inset-top, 44px) 0 0;
+  background: rgba(6,4,8,.85);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(196,168,130,.08);
+}
+.hdr-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px 0;
+}
+.hdr-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 300; letter-spacing: 2px;
+  color: var(--accent2);
+}
+.hdr-logo em { font-style: italic; color: var(--purple2); }
+.hdr-sub { font-size: 10px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; }
+
+/* ── TAB BAR ── */
+.tabbar {
+  display: flex; gap: 4px; padding: 12px 16px 14px;
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 4px; border-radius: 14px;
+  background: var(--s1); border: 1px solid rgba(255,255,255,.04);
+  font-size: 10px; font-weight: 500; color: var(--text3);
+  cursor: pointer; transition: all .25s; letter-spacing: .5px; text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+}
+.tab .ti { font-size: 20px; line-height: 1; }
+.tab.active {
+  background: linear-gradient(135deg, rgba(139,111,196,.25), rgba(196,168,130,.15));
+  border-color: rgba(139,111,196,.35);
+  color: var(--purple2);
+}
+
+/* ── VIEWS ── */
+.view { display: none; padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom,20px) + 24px); position: relative; z-index: 1; }
+.view.active { display: block; }
+
+/* ── CARD ── */
+.card {
+  background: linear-gradient(145deg, var(--s1), var(--s2));
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: var(--r); padding: 20px; margin-bottom: 14px;
+  position: relative; overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(196,168,130,.2), transparent);
+}
+.ct {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px; font-weight: 400; color: var(--accent);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px; letter-spacing: .3px;
+}
+.ct.sb { justify-content: space-between; }
+.ct-icon { font-size: 18px; }
+
+/* ── GUEST ROW ── */
+.grow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+  transition: opacity .25s;
+}
+.grow:last-child { border-bottom: none; }
+.grow.off { opacity: .3; }
+.gdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 6px currentColor; }
+.gn { flex: 1; font-size: 16px; color: var(--text); font-weight: 300; }
+.gni {
+  flex: 1; background: none; border: none; outline: none;
+  font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 300;
+  color: var(--text); min-width: 0; padding: 2px 0;
+}
+.gni::placeholder { color: var(--text3); }
+
+/* ── WEIGHT INPUT ── */
+.wi-w { position: relative; width: 90px; flex-shrink: 0; }
+.wi {
+  width: 100%; background: var(--s3); border: 1.5px solid rgba(196,168,130,.12);
+  border-radius: 10px; padding: 8px 26px 8px 8px;
+  font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500;
+  color: var(--accent2); text-align: right; -webkit-appearance: none; outline: none;
+  transition: border-color .2s;
+}
+.wi:focus { border-color: var(--purple); }
+.wi:disabled { opacity: .2; pointer-events: none; }
+.wu { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--text3); pointer-events: none; }
+
+/* ── TOGGLE BTN ── */
+.tbtn {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; cursor: pointer;
+  background: var(--s3); border: 1px solid rgba(255,255,255,.08);
+  color: var(--text3); font-size: 12px; display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.tbtn.on { background: rgba(139,111,196,.25); border-color: var(--purple); color: var(--purple2); }
+.tbtn.rm { background: rgba(224,80,80,.1); border-color: rgba(224,80,80,.25); color: var(--danger); }
+
+.add-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 12px;
+  background: none; border: 1px dashed rgba(196,168,130,.18); border-radius: 12px;
+  padding: 10px 14px; color: var(--accent); font-family: 'Inter', sans-serif;
+  font-size: 13px; cursor: pointer; transition: all .2s;
+}
+
+/* ── BIG COTTO INPUT ── */
+.big-w {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--s3); border: 1px solid rgba(196,96,112,.2);
+  border-radius: 14px; padding: 16px 18px;
+}
+.big-lbl { flex: 1; }
+.big-lbl strong { display: block; font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.big-lbl span { font-size: 12px; color: var(--text3); }
+.big-inp {
+  width: 120px; background: none; border: none; outline: none;
+  font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 600;
+  color: var(--rose2); text-align: right; -webkit-appearance: none;
+}
+.big-u { font-size: 14px; color: var(--text3); align-self: flex-end; padding-bottom: 4px; }
+
+/* ── CHIPS ── */
+.chips { display: flex; gap: 8px; margin-top: 12px; }
+.chip {
+  flex: 1; background: var(--s3); border-radius: 12px; padding: 10px 12px; text-align: center;
+  border: 1px solid rgba(255,255,255,.04);
+}
+.chip-l { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 4px; }
+.chip-v { font-size: 18px; font-weight: 600; color: var(--text); font-family: 'Cormorant Garamond', serif; }
+.chip-v.hi { color: var(--amber2); }
+
+/* ── OUTPUT ROWS ── */
+.out-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.out-row:last-child { border-bottom: none; }
+.out-name { flex: 1; font-size: 15px; color: var(--text); font-weight: 300; }
+.out-val { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--amber2); line-height: 1; }
+.out-meta { font-size: 11px; color: var(--text3); margin-top: 2px; text-align: right; }
+
+/* ── PIE ── */
+.pie-wrap { display: flex; flex-direction: column; align-items: center; padding: 4px 0; }
+#pieCanvas { max-width: 280px; width: 100%; }
+.legend { width: 100%; margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.li {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--s3); border-radius: 12px; padding: 10px 11px;
+  border: 1px solid rgba(255,255,255,.04);
+}
+.li-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.li-n { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+.li-w { font-size: 16px; font-weight: 600; color: var(--text); font-family: 'Cormorant Garamond', serif; }
+.li-p { font-size: 10px; color: var(--text3); }
+
+/* ══════════════════════════════════
+   PASTA TAB — HORIZONTAL SCROLL CARDS
+══════════════════════════════════ */
+.pasta-scroll {
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.pasta-scroll::-webkit-scrollbar { display: none; }
+
+.pcard {
+  flex-shrink: 0; width: 130px;
+  background: var(--s2); border: 1.5px solid rgba(255,255,255,.06);
+  border-radius: 18px; overflow: hidden; cursor: pointer; transition: all .25s;
+  position: relative;
+}
+.pcard.sel { border-color: var(--purple); background: rgba(139,111,196,.12); }
+.pcard-img {
+  width: 100%; height: 90px; object-fit: cover;
+  display: block; background: var(--s3);
+  filter: saturate(0.7) brightness(0.85);
+  transition: filter .3s;
+}
+.pcard.sel .pcard-img { filter: saturate(1) brightness(1); }
+.pcard-body { padding: 10px 10px 12px; }
+.pcard-name { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.3; }
+.pcard-time { font-size: 11px; color: var(--purple2); margin-top: 4px; font-weight: 300; }
+.pcard-sel-ring {
+  position: absolute; top: 8px; right: 8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--purple); display: none; align-items: center; justify-content: center;
+  font-size: 11px; color: white;
+}
+.pcard.sel .pcard-sel-ring { display: flex; }
+
+/* ── TIMER ── */
+.timer-hero { text-align: center; padding: 20px 0 12px; }
+.timer-ring-w { position: relative; display: inline-block; }
+#timerCanvas { display: block; }
+.t-time {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -56%);
+  font-family: 'Cormorant Garamond', serif; font-size: 52px; font-weight: 300;
+  color: var(--text); pointer-events: none; white-space: nowrap; letter-spacing: -1px;
+}
+.t-label {
+  position: absolute; bottom: 24%; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: var(--text3); pointer-events: none; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.t-name {
+  position: absolute; top: 22%; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: var(--accent); pointer-events: none; white-space: nowrap;
+  font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+}
+.timer-btns { display: flex; gap: 10px; padding: 0 4px; margin-top: 14px; }
+.btn {
+  flex: 1; padding: 15px; background: rgba(139,111,196,.2);
+  border: 1px solid rgba(139,111,196,.3); border-radius: 14px;
+  color: var(--purple2); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500;
+  cursor: pointer; transition: all .2s;
+}
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--purple); border-color: var(--purple); color: white; }
+.btn.danger { background: rgba(224,80,80,.15); border-color: rgba(224,80,80,.3); color: var(--rose2); flex: 0 0 auto; padding: 15px 20px; }
+.btn.sm { flex: 0 0 auto; padding: 15px 18px; }
+
+.alert-banner {
+  margin-top: 12px; padding: 11px 16px; border-radius: 12px;
+  font-size: 13px; font-weight: 500; text-align: center; display: none;
+}
+.alert-banner.warn { background: rgba(196,144,64,.12); color: var(--amber2); border: 1px solid rgba(196,144,64,.2); display: block; }
+.alert-banner.done { background: rgba(106,154,122,.12); color: var(--sage2); border: 1px solid rgba(106,154,122,.2); display: block; }
+
+/* ── POTS ── */
+.pot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.pot-item {
+  background: var(--s2); border: 1.5px solid rgba(255,255,255,.06);
+  border-radius: 16px; padding: 14px 8px; text-align: center;
+  cursor: pointer; transition: all .2s; position: relative; overflow: hidden;
+}
+.pot-item.sel { border-color: var(--accent); background: rgba(196,168,130,.08); }
+.pot-item svg { width: 44px; height: 44px; margin: 0 auto 6px; display: block; }
+.pot-item img.ppic { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; margin: 0 auto 6px; display: block; }
+.pot-item .pn { font-size: 11px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pot-item .pw { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.pot-del { position: absolute; top: 6px; right: 6px; font-size: 9px; color: var(--danger); background: rgba(224,80,80,.15); border-radius: 50%; width: 16px; height: 16px; display: none; align-items: center; justify-content: center; cursor: pointer; font-weight: 700; }
+.pot-item.em .pot-del { display: flex; }
+
+.picon-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin: 10px 0; }
+.picon-opt { background: var(--s2); border: 1.5px solid transparent; border-radius: 10px; padding: 6px; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; }
+.picon-opt svg { width: 34px; height: 34px; }
+.picon-opt.sel { border-color: var(--accent); background: rgba(196,168,130,.08); }
+
+/* ── MODAL ── */
+.modal-ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(14px); z-index: 200; align-items: flex-end; justify-content: center; }
+.modal-ov.open { display: flex; }
+.modal {
+  background: linear-gradient(170deg, var(--s1), var(--s2));
+  border-top: 1px solid rgba(196,168,130,.12);
+  border-radius: 28px 28px 0 0;
+  padding: 22px 20px calc(env(safe-area-inset-bottom,20px)+22px);
+  width: 100%; max-height: 84vh; overflow-y: auto;
+  animation: slideUp .3s cubic-bezier(.32,.72,0,1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-t { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--accent); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+.mc { font-size: 28px; cursor: pointer; color: var(--text3); line-height: 1; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 10px; color: var(--text3); margin-bottom: 7px; text-transform: uppercase; letter-spacing: 1px; }
+.field input { width: 100%; background: var(--s3); border: 1.5px solid rgba(255,255,255,.07); border-radius: 12px; padding: 12px 14px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); outline: none; -webkit-appearance: none; transition: border-color .2s; }
+.field input:focus { border-color: var(--purple); }
+.slbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; margin-top: 16px; display: block; }
+.photo-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--s3); border: 1px dashed rgba(196,168,130,.2); border-radius: 12px; padding: 13px; color: var(--accent); font-size: 13px; cursor: pointer; width: 100%; font-family: 'Inter', sans-serif; }
+.err-msg { color: var(--danger); font-size: 12px; padding: 6px 0; display: none; }
+
+.etbtn { background: none; border: none; color: var(--text3); font-size: 11px; cursor: pointer; text-decoration: underline; font-family: 'Inter', sans-serif; }
+
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+.pulsing { animation: pulse 1.2s ease infinite; }
+</style>
+</head>
+<body>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="blob blob3"></div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-inner">
+    <div>
+      <div class="hdr-logo">La <em>Pasta</em></div>
+      <div class="hdr-sub">pasta weight calculator</div>
+    </div>
+  </div>
+  <div class="tabbar">
+    <button class="tab active" onclick="switchTab('calc')"><span class="ti">⚖️</span>Weights</button>
+    <button class="tab" onclick="switchTab('pasta')"><span class="ti">🍝</span>Pasta</button>
+    <button class="tab" onclick="switchTab('pots')"><span class="ti">🫕</span>Pot</button>
+  </div>
+</div>
+
+<!-- ══ TAB 1: WEIGHTS ══ -->
+<div id="view-calc" class="view active">
+
+  <div class="card">
+    <div class="ct"><span class="ct-icon">🫕</span> Pot</div>
+    <div class="grow">
+      <div class="gn" style="color:var(--text3)">Tare weight</div>
+      <div class="wi-w">
+        <input type="number" class="wi" id="pentola-input" placeholder="0" min="0" oninput="recalc()" inputmode="decimal">
+        <span class="wu">g</span>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:8px">
+      <button class="etbtn" onclick="switchTab('pots')">Select saved pot →</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct sb">
+      <span><span class="ct-icon">👥</span> Guests — Dry weight</span>
+      <span style="font-size:11px;color:var(--text3)" id="total-crudo-lbl">0 g</span>
+    </div>
+    <div id="guests-list"></div>
+    <button class="add-btn" onclick="addGuest()">＋ Add guest</button>
+  </div>
+
+  <div class="card">
+    <div class="ct"><span class="ct-icon">🍳</span> After cooking</div>
+    <div class="big-w">
+      <div class="big-lbl">
+        <strong>Total cooked weight</strong>
+        <span>pasta + pot together</span>
+      </div>
+      <input type="number" class="big-inp" id="cotto-totale" placeholder="0" min="0" oninput="recalc()" inputmode="decimal">
+      <span class="big-u">g</span>
+    </div>
+    <div class="chips">
+      <div class="chip"><div class="chip-l">Dry total</div><div class="chip-v" id="chip-crudo">—</div></div>
+      <div class="chip"><div class="chip-l">Cooked net</div><div class="chip-v hi" id="chip-cotto">—</div></div>
+      <div class="chip"><div class="chip-l">Factor</div><div class="chip-v" id="chip-factor">—</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="out-card" style="display:none">
+    <div class="ct"><span class="ct-icon">🍽</span> Portions</div>
+    <div id="out-list"></div>
+  </div>
+
+  <div class="card" id="pie-card" style="display:none">
+    <div class="ct"><span class="ct-icon">◍</span> Distribution</div>
+    <div class="pie-wrap">
+      <canvas id="pieCanvas" width="280" height="280"></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 2: PASTA ══ -->
+<div id="view-pasta" class="view">
+  <div class="card">
+    <div class="ct"><span class="ct-icon">🍝</span> Pasta shape</div>
+    <div class="pasta-scroll" id="pasta-grid"></div>
+  </div>
+
+  <div class="card" id="timer-card" style="display:none">
+    <div class="ct" id="timer-pasta-name">Timer</div>
+    <div class="timer-hero">
+      <div class="timer-ring-w">
+        <canvas id="timerCanvas" width="230" height="230"></canvas>
+        <div class="t-name" id="t-pasta-name-inner"></div>
+        <div class="t-time" id="timer-time">--:--</div>
+        <div class="t-label" id="timer-label">ready to start</div>
+      </div>
+    </div>
+    <div id="alert-banner" class="alert-banner"></div>
+    <div class="timer-btns" id="timer-btns"></div>
+  </div>
+</div>
+
+<!-- ══ TAB 3: POTS ══ -->
+<div id="view-pots" class="view">
+  <div class="card">
+    <div class="ct sb">
+      <span><span class="ct-icon">🫕</span> Your pots</span>
+      <button class="etbtn" id="edit-pots-btn" onclick="toggleEditPots()">Edit</button>
+    </div>
+    <div class="pot-grid" id="pots-grid"></div>
+    <button class="btn primary" onclick="openAddPot()">＋ New pot</button>
+  </div>
+</div>
+
+<!-- ADD POT MODAL -->
+<div class="modal-ov" id="add-pot-modal">
+  <div class="modal">
+    <div class="modal-t">New Pot <span class="mc" onclick="closeAddPot()">×</span></div>
+    <div class="field"><label>Name</label><input type="text" id="pot-name-input" placeholder="e.g. Big pasta pot"></div>
+    <div class="field"><label>Tare weight (g)</label><input type="number" id="pot-weight-input" placeholder="e.g. 1250" min="0" inputmode="decimal"></div>
+    <div id="pot-err" class="err-msg"></div>
+    <span class="slbl">Icon</span>
+    <div class="picon-grid" id="pot-icons-grid"></div>
+    <span class="slbl">Or use a photo</span>
+    <label class="photo-btn">📷 Take photo or choose from library
+      <input type="file" accept="image/*" capture="environment" id="pot-photo-input" style="display:none" onchange="handlePotPhoto(this)">
+    </label>
+    <img id="pot-photo-preview" style="display:none;width:70px;height:70px;border-radius:12px;object-fit:cover;margin-top:10px">
+    <button class="btn primary" style="width:100%;margin-top:20px" onclick="savePot()">Save pot</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════
+// PALETTE
+// ════════════════════════════════
+const PAL = [
+  '#c46070','#8b6fc4','#6a9a7a','#c49040','#5a7ab0',
+  '#c4808a','#907ac4','#7aaa8a','#d4a850','#6a8ac0'
+];
+
+// ════════════════════════════════
+// PASTA LIST — Wikipedia images
+// ════════════════════════════════
+// Images sourced from Italian Wikipedia pasta pages (Wikimedia Commons, CC-BY-SA)
+const PASTA = [
+  {
+    name: 'Spaghetti n°3',
+    minutes: 7,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Spaghetti_di_Gragnano_IGP.jpg/320px-Spaghetti_di_Gragnano_IGP.jpg'
+  },
+  {
+    name: 'Spaghetti n°5',
+    minutes: 9,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Spaghetti_di_Gragnano_IGP.jpg/320px-Spaghetti_di_Gragnano_IGP.jpg'
+  },
+  {
+    name: 'Spaghetti n°12',
+    minutes: 12,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Spaghetti_di_Gragnano_IGP.jpg/320px-Spaghetti_di_Gragnano_IGP.jpg'
+  },
+  {
+    name: 'Penne Rigate',
+    minutes: 11,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Penne_Rigate.jpg/320px-Penne_Rigate.jpg'
+  },
+  {
+    name: 'Mezze Penne',
+    minutes: 9,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Penne_Rigate.jpg/320px-Penne_Rigate.jpg'
+  },
+  {
+    name: 'Tortiglioni',
+    minutes: 11,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Tortiglioni.jpg/320px-Tortiglioni.jpg'
+  },
+  {
+    name: 'Rigatoni',
+    minutes: 12,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Rigatoni.jpg/320px-Rigatoni.jpg'
+  },
+  {
+    name: 'Fusilli',
+    minutes: 10,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Fusilli_Pasta.jpg/320px-Fusilli_Pasta.jpg'
+  },
+  {
+    name: 'Pappardelle',
+    minutes: 6,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Pappardelle.jpg/320px-Pappardelle.jpg'
+  },
+  {
+    name: 'Tagliatelle',
+    minutes: 5,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Tagliatelle_al_rag%C3%B9.jpg/320px-Tagliatelle_al_rag%C3%B9.jpg'
+  },
+  {
+    name: 'Tagliolini',
+    minutes: 3,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Tagliolini.jpg/320px-Tagliolini.jpg'
+  },
+  {
+    name: 'Vialone Nano Rice',
+    minutes: 18,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Riso_vialone_nano.jpg/320px-Riso_vialone_nano.jpg'
+  },
+  {
+    name: 'Gnocchi',
+    minutes: 3,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Potato-gnocchi.jpg/320px-Potato-gnocchi.jpg'
+  },
+  {
+    name: 'Tortellini',
+    minutes: 5,
+    wiki: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Tortellini_2.jpg/320px-Tortellini_2.jpg'
+  },
+];
+
+// Fallback gradient per pasta card if image fails
+const PASTA_FALLBACK = [
+  '#c46070','#8b6fc4','#6a9a7a','#c49040','#5a7ab0',
+  '#c4808a','#907ac4','#7aaa8a','#d4a850','#6a8ac0',
+  '#c46070','#8b6fc4','#6a9a7a','#c49040'
+];
+
+// ════════════════════════════════
+// POT SVGs (same as before)
+// ════════════════════════════════
+const POT_SVGS = [
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="14" width="32" height="26" rx="4" fill="#6a5a7a" stroke="#9a8ab0" stroke-width="1.5"/><rect x="8" y="14" width="32" height="6" rx="2" fill="#8a7aa0" stroke="#9a8ab0" stroke-width="1.5"/><rect x="3" y="16" width="5" height="5" rx="2" fill="#9a8ab0"/><rect x="40" y="16" width="5" height="5" rx="2" fill="#9a8ab0"/><rect x="18" y="10" width="12" height="5" rx="2" fill="#9a8ab0" stroke="#b0a0c8" stroke-width="1"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="22" cy="30" rx="16" ry="10" fill="#5a4a6a" stroke="#9a8ab0" stroke-width="1.5"/><ellipse cx="22" cy="22" rx="16" ry="5" fill="#7a6a9a" stroke="#9a8ab0" stroke-width="1.5"/><rect x="36" y="20" width="10" height="4" rx="2" fill="#9a8ab0" stroke="#b0a0c8" stroke-width="1"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="18" width="26" height="20" rx="5" fill="#6a5a7a" stroke="#9a8ab0" stroke-width="1.5"/><rect x="10" y="18" width="26" height="6" rx="3" fill="#8a7aa0" stroke="#9a8ab0" stroke-width="1.5"/><rect x="34" y="19" width="9" height="4" rx="2" fill="#9a8ab0"/><path d="M20 15 Q24 11 28 15" stroke="#9a8ab0" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 20 Q24 44 42 20" fill="#5a4a6a" stroke="#9a8ab0" stroke-width="1.5"/><path d="M6 20 Q24 30 42 20" fill="#7a6a9a" stroke="#9a8ab0" stroke-width="1.5"/><rect x="1" y="18" width="7" height="4" rx="2" fill="#9a8ab0"/><rect x="40" y="18" width="7" height="4" rx="2" fill="#9a8ab0"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="20" width="34" height="20" rx="5" fill="#6a5a7a" stroke="#9a8ab0" stroke-width="1.5"/><path d="M7 20 Q7 14 24 14 Q41 14 41 20 Z" fill="#8a7aa0" stroke="#9a8ab0" stroke-width="1.5"/><circle cx="24" cy="12" r="3" fill="#9a8ab0"/><rect x="3" y="22" width="5" height="5" rx="2" fill="#9a8ab0"/><rect x="40" y="22" width="5" height="5" rx="2" fill="#9a8ab0"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="16" width="32" height="24" rx="6" fill="#4a6a5a" stroke="#7ab09a" stroke-width="1.5"/><rect x="8" y="16" width="32" height="7" rx="4" fill="#6a9a8a" stroke="#7ab09a" stroke-width="1.5"/><circle cx="24" cy="12" r="3" fill="#7ab09a"/><rect x="3" y="18" width="5" height="5" rx="2" fill="#7ab09a"/><rect x="40" y="18" width="5" height="5" rx="2" fill="#7ab09a"/><circle cx="35" cy="13" r="2" fill="#9ad0ba"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="20" width="20" height="18" rx="4" fill="#6a5a7a" stroke="#9a8ab0" stroke-width="1.5"/><rect x="14" y="20" width="20" height="5" rx="2.5" fill="#8a7aa0" stroke="#9a8ab0" stroke-width="1.5"/><rect x="32" y="21" width="9" height="3.5" rx="1.75" fill="#9a8ab0"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="9" y="13" width="30" height="28" rx="4" fill="#6a5a7a" stroke="#9a8ab0" stroke-width="1.5"/><rect x="7" y="12" width="34" height="7" rx="3" fill="#8a7aa0" stroke="#9a8ab0" stroke-width="1.5"/><rect x="18" y="8" width="12" height="5" rx="2" fill="#9a8ab0"/><circle cx="20" cy="15.5" r="1" fill="#b0a0c8"/><circle cx="24" cy="15.5" r="1" fill="#b0a0c8"/><circle cx="28" cy="15.5" r="1" fill="#b0a0c8"/><rect x="4" y="14" width="5" height="5" rx="2" fill="#9a8ab0"/><rect x="39" y="14" width="5" height="5" rx="2" fill="#9a8ab0"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="21" cy="28" r="14" fill="#5a4a6a" stroke="#9a8ab0" stroke-width="1.5"/><circle cx="21" cy="28" r="9" fill="#7a6a9a" opacity=".6"/><rect x="33" y="26" width="13" height="4" rx="2" fill="#9a8ab0"/></svg>`,
+  `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 22 Q6 40 24 40 Q42 40 42 22 Z" fill="#6a5a7a" stroke="#9a8ab0" stroke-width="1.5"/><ellipse cx="24" cy="22" rx="18" ry="5" fill="#8a7aa0" stroke="#9a8ab0" stroke-width="1.5"/></svg>`,
+];
+
+// ════════════════════════════════
+// STATE
+// ════════════════════════════════
+let guests = [], pots = [], selectedPotIdx = null, selectedPasta = null;
+let editingPots = false, potPhotoDataUrl = null, selectedPotIconIdx = 0;
+let timerInterval = null, timerTotal = 0, timerRemaining = 0, timerRunning = false;
+let warningFired = false, doneFired = false;
+let rafId = null, pieSlices = [];
+
+// ════════════════════════════════
+// INIT
+// ════════════════════════════════
+function init() {
+  try {
+    const sp = localStorage.getItem('pasta_en_pots');
+    const sg = localStorage.getItem('pasta_en_guests');
+    const si = localStorage.getItem('pasta_en_pot_sel');
+    if (sp) pots = JSON.parse(sp);
+    if (si !== null) selectedPotIdx = parseInt(si);
+    if (sg) { guests = JSON.parse(sg); }
+    else { ['Lora','Nikki','Andrea'].forEach((n,i) => guests.push({id:Date.now()+i,name:n,crudo:'',active:true,preset:true})); }
+  } catch(e) {
+    ['Lora','Nikki','Andrea'].forEach((n,i) => guests.push({id:Date.now()+i,name:n,crudo:'',active:true,preset:true}));
+  }
+  renderGuests(); renderPastaGrid(); renderPotsGrid(); renderPotIcons(); recalc();
+  if (selectedPotIdx !== null && pots[selectedPotIdx]) document.getElementById('pentola-input').value = pots[selectedPotIdx].weight;
+  document.getElementById('add-pot-modal').addEventListener('click', function(e){ if(e.target===this) closeAddPot(); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+function switchTab(t) {
+  ['calc','pasta','pots'].forEach((n,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', n===t);
+    document.getElementById('view-'+n).classList.toggle('active', n===t);
+  });
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ════════════════════════════════
+// GUESTS
+// ════════════════════════════════
+function renderGuests() {
+  const list = document.getElementById('guests-list');
+  list.innerHTML = '';
+  guests.forEach((g,i) => {
+    const col = PAL[i % PAL.length];
+    const row = document.createElement('div');
+    row.className = 'grow' + (g.active ? '' : ' off');
+    row.innerHTML = `
+      <div class="gdot" style="background:${col};color:${col}"></div>
+      ${g.preset
+        ? `<div class="gn">${esc(g.name)}</div>`
+        : `<input class="gni" data-id="${g.id}" value="${esc(g.name)}" oninput="updateName(this)" placeholder="Name" type="text">`
+      }
+      <div class="wi-w">
+        <input type="number" class="wi" data-id="${g.id}" value="${g.crudo}"
+          oninput="updateCrudo(this)" ${g.active?'':'disabled'} placeholder="0" min="0" inputmode="decimal">
+        <span class="wu">g</span>
+      </div>
+      <button class="tbtn ${g.active?'on':''}" onclick="toggleGuest('${g.id}')">${g.active?'✓':'○'}</button>
+      ${!g.preset?`<button class="tbtn rm" onclick="removeGuest('${g.id}')">✕</button>`:''}
+    `;
+    list.appendChild(row);
+  });
+  saveGuests();
+}
+function updateName(el){const g=guests.find(x=>x.id===parseInt(el.dataset.id));if(g){g.name=el.value;saveGuests();}}
+function updateCrudo(el){const g=guests.find(x=>x.id===parseInt(el.dataset.id));if(g){g.crudo=el.value;saveGuests();recalc();}}
+function toggleGuest(id){const g=guests.find(x=>x.id===parseInt(id));if(g)g.active=!g.active;renderGuests();recalc();}
+function removeGuest(id){guests=guests.filter(x=>x.id!==parseInt(id));renderGuests();recalc();}
+function addGuest(){
+  guests.push({id:Date.now(),name:'',crudo:'',active:true,preset:false});
+  renderGuests();
+  setTimeout(()=>{const ins=document.querySelectorAll('.gni');if(ins.length)ins[ins.length-1].focus();},50);
+}
+function saveGuests(){try{localStorage.setItem('pasta_en_guests',JSON.stringify(guests));}catch(e){}}
+
+// ════════════════════════════════
+// CALC
+// ════════════════════════════════
+function recalc(){
+  const pot=parseFloat(document.getElementById('pentola-input').value)||0;
+  const cottoPot=parseFloat(document.getElementById('cotto-totale').value)||0;
+  const active=guests.filter(g=>g.active);
+  const totalDry=active.reduce((s,g)=>s+(parseFloat(g.crudo)||0),0);
+  document.getElementById('total-crudo-lbl').textContent=totalDry+'g';
+  document.getElementById('chip-crudo').textContent=totalDry?totalDry+'g':'—';
+  const netCooked=Math.max(0,cottoPot-pot);
+  const factor=totalDry>0?netCooked/totalDry:0;
+  document.getElementById('chip-cotto').textContent=netCooked>0?netCooked+'g':'—';
+  document.getElementById('chip-factor').textContent=factor>0?'×'+factor.toFixed(2):'—';
+  const results=active.map((g,i)=>{
+    const dry=parseFloat(g.crudo)||0;
+    const pct=totalDry>0?(dry/totalDry)*100:0;
+    const cooked=(totalDry>0&&netCooked>0)?Math.round((dry/totalDry)*netCooked):0;
+    return{name:g.name||'—',dry,cooked,pct:pct.toFixed(1),color:PAL[i%PAL.length]};
+  });
+  // Output card
+  const hasCotto=netCooked>0&&totalDry>0;
+  document.getElementById('out-card').style.display=hasCotto?'block':'none';
+  if(hasCotto){
+    const ol=document.getElementById('out-list');ol.innerHTML='';
+    results.forEach(r=>{
+      const row=document.createElement('div');row.className='out-row';
+      row.innerHTML=`
+        <div class="gdot" style="background:${r.color};color:${r.color}"></div>
+        <div class="out-name">${esc(r.name)}</div>
+        <div style="text-align:right">
+          <div><span class="out-val">${r.cooked}</span> <span style="font-size:12px;color:var(--text3)">g</span></div>
+          <div class="out-meta">${r.pct}%</div>
+        </div>`;
+      ol.appendChild(row);
+    });
+  }
+  updatePie(results,netCooked);
+}
+
+// ════════════════════════════════
+// PIE
+// ════════════════════════════════
+function updatePie(results,netCooked){
+  const hasDry=results.some(r=>r.dry>0);
+  document.getElementById('pie-card').style.display=hasDry?'block':'none';
+  if(!hasDry)return;
+  // Legend
+  const leg=document.getElementById('legend');leg.innerHTML='';
+  results.forEach(r=>{
+    if(!r.dry)return;
+    const item=document.createElement('div');item.className='li';
+    const sc=netCooked>0&&r.cooked>0;
+    item.innerHTML=`<div class="li-dot" style="background:${r.color}"></div><div style="flex:1;min-width:0"><div class="li-n">${esc(r.name)}</div><div class="li-w">${sc?r.cooked+'g':r.dry+'g'}</div><div class="li-p">${r.pct}% &middot; ${sc?'cooked':'dry'}</div></div>`;
+    leg.appendChild(item);
+  });
+  const valid=results.filter(r=>r.dry>0);
+  if(pieSlices.length!==valid.length){
+    pieSlices=valid.map(r=>({target:parseFloat(r.pct)/100,current:0,color:r.color,cooked:r.cooked,dry:r.dry,pct:r.pct,name:r.name}));
+  } else {
+    valid.forEach((r,i)=>{pieSlices[i].target=parseFloat(r.pct)/100;Object.assign(pieSlices[i],{color:r.color,cooked:r.cooked,dry:r.dry,pct:r.pct,name:r.name});});
+  }
+  if(rafId)cancelAnimationFrame(rafId);
+  animatePie();
+}
+
+function animatePie(){
+  const cv=document.getElementById('pieCanvas');if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2,R=W/2-16,IR=R*.52;
+  let moving=false;
+  pieSlices.forEach(s=>{const d=s.target-s.current;if(Math.abs(d)>0.0005){s.current+=d*.13;moving=true;}else s.current=s.target;});
+  ctx.clearRect(0,0,W,H);
+  // Outer glow ring
+  ctx.beginPath();ctx.arc(cx,cy,R+6,0,Math.PI*2);ctx.strokeStyle='rgba(139,111,196,.06)';ctx.lineWidth=12;ctx.stroke();
+  let angle=-Math.PI/2;
+  pieSlices.forEach(s=>{
+    if(s.current<=0)return;
+    const sweep=s.current*Math.PI*2;
+    ctx.save();ctx.shadowColor=s.color;ctx.shadowBlur=18;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,angle,angle+sweep);ctx.closePath();
+    ctx.fillStyle=s.color;ctx.fill();ctx.restore();
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,angle,angle+sweep);ctx.closePath();
+    ctx.strokeStyle='rgba(6,4,8,.9)';ctx.lineWidth=3;ctx.stroke();
+    angle+=sweep;
+  });
+  // Donut hole with gradient
+  const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,IR);
+  grad.addColorStop(0,'#0d0910');grad.addColorStop(1,'#060408');
+  ctx.beginPath();ctx.arc(cx,cy,IR,0,Math.PI*2);ctx.fillStyle=grad;ctx.fill();
+  // Center text
+  const pot=parseFloat(document.getElementById('pentola-input').value)||0;
+  const cottoPot=parseFloat(document.getElementById('cotto-totale').value)||0;
+  const net=Math.max(0,cottoPot-pot);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  if(net>0){
+    ctx.fillStyle='#f0eaf8';ctx.font='600 22px "Cormorant Garamond",serif';ctx.fillText(net+'g',cx,cy-10);
+    ctx.fillStyle='#5a5268';ctx.font='300 11px Inter,sans-serif';ctx.fillText('cooked net',cx,cy+10);
+  } else {
+    const td=pieSlices.reduce((s,sl)=>s+(sl.dry||0),0);
+    if(td>0){ctx.fillStyle='#f0eaf8';ctx.font='600 22px "Cormorant Garamond",serif';ctx.fillText(td+'g',cx,cy-10);ctx.fillStyle='#5a5268';ctx.font='300 11px Inter,sans-serif';ctx.fillText('dry total',cx,cy+10);}
+  }
+  if(moving)rafId=requestAnimationFrame(animatePie);
+}
+
+// ════════════════════════════════
+// PASTA GRID
+// ════════════════════════════════
+function renderPastaGrid(){
+  const grid=document.getElementById('pasta-grid');grid.innerHTML='';
+  PASTA.forEach((p,i)=>{
+    const card=document.createElement('div');
+    card.className='pcard'+(selectedPasta===i?' sel':'');
+    card.innerHTML=`
+      <img class="pcard-img" src="${p.wiki}" alt="${p.name}"
+        onerror="this.style.background='linear-gradient(135deg,${PASTA_FALLBACK[i]},#0d0910)';this.style.height='90px';this.src=''">
+      <div class="pcard-body">
+        <div class="pcard-name">${p.name}</div>
+        <div class="pcard-time">⏱ ${p.minutes} min</div>
+      </div>
+      <div class="pcard-sel-ring">✓</div>
+    `;
+    card.onclick=()=>selectPasta(i);
+    grid.appendChild(card);
+  });
+}
+
+function selectPasta(i){
+  selectedPasta=i;renderPastaGrid();
+  const p=PASTA[i];
+  document.getElementById('timer-card').style.display='block';
+  document.getElementById('timer-pasta-name').innerHTML=`<span class="ct-icon">⏱</span> Timer`;
+  document.getElementById('t-pasta-name-inner').textContent=p.name;
+  if(!timerRunning){timerTotal=p.minutes*60;timerRemaining=timerTotal;warningFired=false;doneFired=false;renderTimerDisplay();renderTimerBtns();document.getElementById('alert-banner').className='alert-banner';document.getElementById('timer-label').textContent='ready to start';}
+}
+
+// ════════════════════════════════
+// TIMER
+// ════════════════════════════════
+function renderTimerDisplay(){
+  const m=Math.floor(timerRemaining/60),s=timerRemaining%60;
+  document.getElementById('timer-time').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  const cv=document.getElementById('timerCanvas'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2,r=W/2-18;
+  ctx.clearRect(0,0,W,H);
+  // Bg track
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=10;ctx.stroke();
+  // Progress arc
+  const prog=timerTotal>0?timerRemaining/timerTotal:1;
+  const col=timerRemaining<=60?'#e05050':timerRemaining<=timerTotal*.3?'#c49040':'#8b6fc4';
+  const endA=-Math.PI/2+(prog*Math.PI*2);
+  ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,endA);
+  ctx.strokeStyle=col;ctx.lineWidth=10;ctx.lineCap='round';
+  ctx.shadowColor=col;ctx.shadowBlur=20;ctx.stroke();ctx.shadowBlur=0;
+  // Outer dot at tip
+  const tipX=cx+r*Math.cos(endA),tipY=cy+r*Math.sin(endA);
+  ctx.beginPath();ctx.arc(tipX,tipY,5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+  document.getElementById('timer-time').style.color=timerRemaining<=60?'#e07070':'#f0eaf8';
+}
+
+function renderTimerBtns(){
+  const b=document.getElementById('timer-btns');
+  if(!timerRunning&&timerRemaining===timerTotal) b.innerHTML=`<button class="btn primary" onclick="startTimer()">▶ Start cooking</button>`;
+  else if(timerRunning) b.innerHTML=`<button class="btn sm danger" onclick="stopTimer()">⏸</button><button class="btn sm" onclick="resetTimer()">↺</button>`;
+  else if(timerRemaining<=0) b.innerHTML=`<button class="btn primary" onclick="resetTimer()" style="background:var(--sage);border-color:var(--sage)">✓ Done — Reset</button>`;
+  else b.innerHTML=`<button class="btn sm danger" onclick="resetTimer()">↺</button><button class="btn primary" onclick="startTimer()">▶ Resume</button>`;
+}
+
+function startTimer(){
+  if(timerRemaining<=0)return;
+  timerRunning=true;document.getElementById('timer-label').textContent='cooking…';
+  document.getElementById('timer-time').classList.add('pulsing');renderTimerBtns();
+  timerInterval=setInterval(()=>{
+    timerRemaining--;renderTimerDisplay();
+    if(timerRemaining===60&&!warningFired){warningFired=true;playBeep('warning');const b=document.getElementById('alert-banner');b.textContent='⚠️ One minute left!';b.className='alert-banner warn';}
+    if(timerRemaining<=0&&!doneFired){doneFired=true;clearInterval(timerInterval);timerRunning=false;playBeep('done');document.getElementById('timer-label').textContent='ready!';document.getElementById('timer-time').classList.remove('pulsing');const b=document.getElementById('alert-banner');b.textContent='🍝 Pasta is ready — drain now!';b.className='alert-banner done';renderTimerBtns();}
+  },1000);
+}
+function stopTimer(){clearInterval(timerInterval);timerRunning=false;document.getElementById('timer-time').classList.remove('pulsing');document.getElementById('timer-label').textContent='paused';renderTimerBtns();}
+function resetTimer(){clearInterval(timerInterval);timerRunning=false;warningFired=false;doneFired=false;if(selectedPasta!==null)timerRemaining=PASTA[selectedPasta].minutes*60;document.getElementById('timer-label').textContent='ready to start';document.getElementById('timer-time').classList.remove('pulsing');document.getElementById('alert-banner').className='alert-banner';renderTimerDisplay();renderTimerBtns();}
+
+function playBeep(type){
+  try{
+    const ac=new(window.AudioContext||window.webkitAudioContext)();
+    if(type==='warning'){[0,.35].forEach((d,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=660+i*110;o.type='sine';g.gain.setValueAtTime(0,ac.currentTime+d);g.gain.linearRampToValueAtTime(.28,ac.currentTime+d+.05);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d+.55);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+.6);});}
+    else{[0,.22,.44].forEach((d,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=[523,659,784][i];o.type='sine';g.gain.setValueAtTime(0,ac.currentTime+d);g.gain.linearRampToValueAtTime(.38,ac.currentTime+d+.05);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d+.65);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+.8);});}
+  }catch(e){}
+}
+
+// ════════════════════════════════
+// POTS
+// ════════════════════════════════
+function renderPotsGrid(){
+  const grid=document.getElementById('pots-grid');grid.innerHTML='';
+  if(!pots.length){grid.innerHTML='<div style="color:var(--text3);font-size:13px;grid-column:1/-1;text-align:center;padding:14px 0;font-weight:300">No pots saved yet</div>';return;}
+  pots.forEach((pot,i)=>{
+    const item=document.createElement('div');
+    item.className='pot-item'+(selectedPotIdx===i?' sel':'')+(editingPots?' em':'');
+    item.innerHTML=`${pot.photo?`<img class="ppic" src="${pot.photo}" alt="${esc(pot.name)}">`:POT_SVGS[pot.iconIdx||0]}<div class="pn">${esc(pot.name)}</div><div class="pw">${pot.weight}g</div><div class="pot-del" onclick="deletePot(event,${i})">✕</div>`;
+    item.addEventListener('click',()=>{if(!editingPots)selectPot(i);});
+    grid.appendChild(item);
+  });
+}
+function selectPot(i){selectedPotIdx=i;try{localStorage.setItem('pasta_en_pot_sel',i);}catch(e){}document.getElementById('pentola-input').value=pots[i].weight;renderPotsGrid();recalc();switchTab('calc');}
+function toggleEditPots(){editingPots=!editingPots;document.getElementById('edit-pots-btn').textContent=editingPots?'Done':'Edit';renderPotsGrid();}
+function deletePot(e,i){e.stopPropagation();if(selectedPotIdx===i){selectedPotIdx=null;try{localStorage.removeItem('pasta_en_pot_sel');}catch(e){}document.getElementById('pentola-input').value='';recalc();}pots.splice(i,1);if(selectedPotIdx!==null&&selectedPotIdx>=pots.length)selectedPotIdx=null;savePots();renderPotsGrid();}
+function savePots(){try{localStorage.setItem('pasta_en_pots',JSON.stringify(pots));}catch(e){}}
+
+function renderPotIcons(){
+  const grid=document.getElementById('pot-icons-grid');grid.innerHTML='';
+  POT_SVGS.forEach((svg,i)=>{
+    const d=document.createElement('div');d.className='picon-opt'+(selectedPotIconIdx===i?' sel':'');d.innerHTML=svg;
+    d.onclick=()=>{selectedPotIconIdx=i;potPhotoDataUrl=null;document.getElementById('pot-photo-preview').style.display='none';renderPotIcons();};
+    grid.appendChild(d);
+  });
+}
+function openAddPot(){potPhotoDataUrl=null;selectedPotIconIdx=0;document.getElementById('pot-name-input').value='';document.getElementById('pot-weight-input').value='';document.getElementById('pot-photo-preview').style.display='none';document.getElementById('pot-err').style.display='none';renderPotIcons();document.getElementById('add-pot-modal').classList.add('open');}
+function closeAddPot(){document.getElementById('add-pot-modal').classList.remove('open');}
+function handlePotPhoto(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{potPhotoDataUrl=e.target.result;const prev=document.getElementById('pot-photo-preview');prev.src=potPhotoDataUrl;prev.style.display='block';selectedPotIconIdx=-1;renderPotIcons();};reader.readAsDataURL(file);}
+function savePot(){
+  const name=document.getElementById('pot-name-input').value.trim();
+  const weight=parseFloat(document.getElementById('pot-weight-input').value);
+  const errEl=document.getElementById('pot-err');
+  if(!name||!weight||weight<=0){errEl.textContent=!name?'Please enter a name.':'Please enter a valid weight (e.g. 1250).';errEl.style.display='block';return;}
+  errEl.style.display='none';
+  pots.push({name,weight,iconIdx:selectedPotIconIdx>=0?selectedPotIconIdx:0,photo:potPhotoDataUrl||null});
+  savePots();renderPotsGrid();closeAddPot();
+}
+
+init();
+</script>
+</body>
+</html>
